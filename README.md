@@ -1,4 +1,4 @@
-\# RadialLauncher
+# RadialLauncher
 
 
 
@@ -10,7 +10,7 @@ Middle-click anywhere, move the mouse in one of eight directions, and release to
 
 
 
-\## Current Status
+## Current Status
 
 
 
@@ -22,85 +22,85 @@ Currently implemented:
 
 
 
-\- Global middle-click activation
+- Global middle-click activation
 
-\- 8-direction radial menu
+- 8-direction radial menu
 
-\- Direction-based mouse selection
+- Direction-based mouse selection
 
-\- Selected-direction highlighting
+- Selected-direction highlighting
 
-\- Application launching
+- Application launching
 
-\- Radial menu centered on the screen
+- Radial menu centered on the screen
 
-\- Radial menu displayed above normal windows
+- Radial menu displayed above normal windows
 
-\- System tray presence
+- System tray presence
 
-\- Exit option from the system tray
-
-
-
-At the moment, the \*\*North\*\* slot launches Notepad. The remaining seven slots are placeholders.
+- Exit option from the system tray
 
 
 
-\## Requirements
+At the moment, the **North** slot launches Notepad. The remaining seven slots are placeholders.
 
 
 
-\- Windows 10 or Windows 11
-
-\- C++ compiler with Windows/Win32 support
-
-\- CMake
-
-\- Git
+## Requirements
 
 
 
-\## Building
+- Windows 10 or Windows 11
+
+- C++ compiler with Windows/Win32 support
+
+- CMake
+
+- Git
 
 
 
-1\. Clone the repository.
-
-2\. Configure the project using CMake or a CMake-compatible IDE.
-
-3\. Build `RadialLauncher`.
-
-4\. Run the application.
+## Building
 
 
 
-\## Planned
+1. Clone the repository.
+
+2. Configure the project using CMake or a CMake-compatible IDE.
+
+3. Build `RadialLauncher`.
+
+4. Run the application.
 
 
 
-\- Application customization
-
-\- Assign applications to radial slots
-
-\- Custom application icons
-
-\- Improved radial menu design
-
-\- Configurable launcher settings
-
-\- Multi-monitor support
-
-\- Edge-of-screen behavior
-
-\- Improved application focus handling
-
-\- Windows startup option
-
-\- Additional launcher features
+## Planned
 
 
 
-\## Contributing
+- Application customization
+
+- Assign applications to radial slots
+
+- Custom application icons
+
+- Improved radial menu design
+
+- Configurable launcher settings
+
+- Multi-monitor support
+
+- Edge-of-screen behavior
+
+- Improved application focus handling
+
+- Windows startup option
+
+- Additional launcher features
+
+
+
+## Contributing
 
 
 
@@ -112,7 +112,7 @@ The project may change significantly as development continues.
 
 
 
-\## License
+## License
 
 
 
