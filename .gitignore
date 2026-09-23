@@ -1,0 +1,21 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# CMake build output
+out/
+build/
+cmake-build-*/
+
+# Compiled files
+*.exe
+*.dll
+*.obj
+*.lib
+*.pdb
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
