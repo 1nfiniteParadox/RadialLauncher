@@ -1,31 +1,26 @@
 #include <windows.h>
 #include <shellapi.h>
 #include <string>
+#include <vector>
+
+#include "RadialConfig.h"
 
 void LaunchSelectedApp(int selectedIndex)
 {
-    const char* appPaths[8] =
-    {
-        "C:\\Windows\\System32\\notepad.exe", // N
-        "",                                    // NE
-        "",                                    // E
-        "",                                    // SE
-        "",                                    // S
-        "",                                    // SW
-        "",                                    // W
-        ""                                     // NW
-    };
+    std::vector<std::string> appPaths(optionCount, "");
 
-    if (selectedIndex < 0 || selectedIndex >= 8)
+    appPaths[0] = "C:\\Users\\tanma\\Desktop\\Notepad.exe - Shortcut.lnk";
+
+    if (selectedIndex < 0 || selectedIndex >= optionCount)
         return;
 
-    if (appPaths[selectedIndex][0] == '\0')
+    if (appPaths[selectedIndex].empty())
         return;
 
     HINSTANCE result = ShellExecuteA(
         nullptr,
         "open",
-        appPaths[selectedIndex],
+        appPaths[selectedIndex].c_str(),
         nullptr,
         nullptr,
         SW_SHOWNORMAL

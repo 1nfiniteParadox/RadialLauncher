@@ -1,36 +1,23 @@
 # RadialLauncher
 
-
-
 A lightweight Windows radial application launcher.
 
-
-
-Middle-click anywhere, move the mouse in one of eight directions, and release to launch the application assigned to that direction.
-
+Middle-click anywhere, move the mouse in one of available directions, and release to launch the application assigned to that direction.
 
 
 ## Current Status
 
-
-
 RadialLauncher is in early development.
-
-
 
 Currently implemented:
 
-
-
 - Global middle-click activation
 
-- 8-direction radial menu
+- Configurable radial menu slot count
 
 - Direction-based mouse selection
 
 - Selected-direction highlighting
-
-- Application launching
 
 - Radial menu centered on the screen
 
@@ -40,15 +27,10 @@ Currently implemented:
 
 - Exit option from the system tray
 
-
-
-At the moment, the **North** slot launches Notepad. The remaining seven slots are placeholders.
-
+At the moment, the first radial slot launches Notepad. The remaining slots are placeholders.
 
 
 ## Requirements
-
-
 
 - Windows 10 or Windows 11
 
@@ -59,10 +41,7 @@ At the moment, the **North** slot launches Notepad. The remaining seven slots ar
 - Git
 
 
-
 ## Building
-
-
 
 1. Clone the repository.
 
@@ -73,10 +52,7 @@ At the moment, the **North** slot launches Notepad. The remaining seven slots ar
 4. Run the application.
 
 
-
 ## Planned
-
-
 
 - Application customization
 
@@ -92,29 +68,17 @@ At the moment, the **North** slot launches Notepad. The remaining seven slots ar
 
 - Edge-of-screen behavior
 
-- Improved application focus handling
-
 - Windows startup option
-
-- Additional launcher features
-
 
 
 ## Contributing
 
-
-
 RadialLauncher is an evolving project and contributions, ideas, experiments, and alternative implementations are welcome.
-
-
 
 The project may change significantly as development continues.
 
 
-
 ## License
-
-
 
 No license has been selected yet.
 

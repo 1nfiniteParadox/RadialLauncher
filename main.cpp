@@ -6,11 +6,12 @@
 #include <shellapi.h>
 
 #include "AppLauncher.h"
+#include "RadialConfig.h"
 
 bool trackingMouse = false;
 
 POINT clickPosition = {};
-std::string direction = "Click and Move";
+int selectedIndex = -1;
 
 HHOOK mouseHook = nullptr;
 HWND mainWindow = nullptr;
@@ -19,45 +20,38 @@ NOTIFYICONDATAA trayIcon = {};
 #define WM_TRAYICON (WM_APP + 10)
 #define ID_TRAY_EXIT 1001
 
-std::string GetDirection(int dx, int dy)
+int GetSelectedIndex(int dx, int dy)
 {
     double distance = std::sqrt(
         static_cast<double>(dx * dx + dy * dy)
     );
 
-    if (distance < 30.0)
-        return "CENTER";
+    const double noSelectionRadius =
+        (launcherSize * centerDeadZone) / 2.0;
+
+    if (distance < noSelectionRadius)
+        return -1;
+
+    const double PI = 3.14159265358979323846;
 
     double angle = std::atan2(
-        -dy,
-        dx
-    ) * 180.0 / 3.14159265358979323846;
+        static_cast<double>(dx),
+        static_cast<double>(-dy)
+    );
 
     if (angle < 0)
-        angle += 360.0;
+        angle += 2.0 * PI;
 
-    if (angle >= 337.5 || angle < 22.5)
-        return "EAST";
+    const double angleStep =
+        (2.0 * PI) / optionCount;
 
-    if (angle < 67.5)
-        return "NORTHEAST";
-    
-    if (angle < 112.5)
-        return "NORTH";
+    int index = static_cast<int>(
+        (angle + angleStep / 2.0) / angleStep
+        );
 
-    if (angle < 157.5)
-        return "NORTHWEST";
+    index %= optionCount;
 
-    if (angle < 202.5)
-        return "WEST";
-
-    if (angle < 247.5)
-        return "SOUTHWEST";
-
-    if (angle < 292.5)
-        return "SOUTH";
-
-    return "SOUTHEAST";
+    return index;
 }
 
 void DrawCircle(
@@ -124,35 +118,6 @@ void DrawTextCentered(
     );
 }
 
-int DirectionToIndex(const std::string& direction)
-{
-    if (direction == "NORTH")
-        return 0;
-
-    if (direction == "NORTHEAST")
-        return 1;
-
-    if (direction == "EAST")
-        return 2;
-
-    if (direction == "SOUTHEAST")
-        return 3;
-
-    if (direction == "SOUTH")
-        return 4;
-
-    if (direction == "SOUTHWEST")
-        return 5;
-
-    if (direction == "WEST")
-        return 6;
-
-    if (direction == "NORTHWEST")
-        return 7;
-
-    return -1;
-}
-
 LRESULT CALLBACK LowLevelMouseProc(
     int nCode,
     WPARAM wParam,
@@ -168,7 +133,7 @@ LRESULT CALLBACK LowLevelMouseProc(
             clickPosition = mouse->pt;
 
             trackingMouse = true;
-            direction = "CENTER";
+            selectedIndex = -1;
 
             SetWindowPos(
                 mainWindow,
@@ -177,8 +142,12 @@ LRESULT CALLBACK LowLevelMouseProc(
                 0,
                 0,
                 0,
-                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW 
+                SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW 
             );
+
+            ShowWindow(mainWindow, SW_SHOW);
+            SetForegroundWindow(mainWindow);
+            BringWindowToTop(mainWindow);
 
             PostMessage(
                 mainWindow,
@@ -193,7 +162,7 @@ LRESULT CALLBACK LowLevelMouseProc(
 
             int dy = mouse->pt.y - clickPosition.y;
 
-            direction = GetDirection(dx, dy);
+            selectedIndex = GetSelectedIndex(dx, dy);
 
             PostMessage(
                 mainWindow,
@@ -206,8 +175,6 @@ LRESULT CALLBACK LowLevelMouseProc(
         {
             trackingMouse = false;
 
-            int selectedIndex = DirectionToIndex(direction);
-
             if (selectedIndex != -1)
             {
                 LaunchSelectedApp(selectedIndex);
@@ -217,6 +184,8 @@ LRESULT CALLBACK LowLevelMouseProc(
                 mainWindow,
                 SW_HIDE
             );
+
+            selectedIndex = -1;
         }
     }
 
@@ -333,27 +302,22 @@ LRESULT CALLBACK WindowProc(
 
         const double PI = 3.14159265358979323846;
 
-        int distance = 150;
+        double distance = (launcherSize / 2.0) * itemDistance;
         int radius = 30;
 
-        int selectedIndex = DirectionToIndex(direction);
+        std::vector<std::string> labels;
 
-        const char* labels[8] =
+        for (int i = 0; i < optionCount; i++)
         {
-            "N",
-            "NE",
-            "E",
-            "SE",
-            "S",
-            "SW",
-            "W",
-            "NW"
-        };
+            labels.push_back(
+                std::to_string(i + 1)
+            );
+        }
 
         // Draw radial menu
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < optionCount; i++)
         {
-            double angle = (- PI / 2.0) + (i * (2.0 * PI / 8.0));
+            double angle = (- PI / 2.0) + (i * (2.0 * PI / optionCount));
 
             int x = centerX + static_cast<int>(std::cos(angle) * distance);
             int y = centerY + static_cast<int>(std::sin(angle) * distance);
@@ -460,8 +424,8 @@ int WINAPI WinMain(
         WS_POPUP,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
-        500,
-        500,
+        launcherSize,
+        launcherSize,
         nullptr,
         nullptr,
         hInstance,
@@ -472,6 +436,37 @@ int WINAPI WinMain(
     {
         return 0;
     }
+
+    const int innerSize = static_cast<int>(launcherSize * innerRegionSize);
+
+    const int innerOffset = (launcherSize - innerSize) / 2;
+
+    HRGN outerRegion = CreateEllipticRgn(
+        0,
+        0,
+        launcherSize,
+        launcherSize
+    );
+
+    HRGN innerRegion = CreateEllipticRgn(
+        innerOffset,
+        innerOffset,
+        innerOffset + innerSize,
+        innerOffset + innerSize
+    );
+
+    CombineRgn(
+        outerRegion,
+        outerRegion,
+        innerRegion,
+        RGN_DIFF
+    );
+
+    SetWindowRgn(
+        hwnd,
+        outerRegion,
+        TRUE
+    );
 
     mainWindow = hwnd;
 
