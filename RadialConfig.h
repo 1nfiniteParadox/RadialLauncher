@@ -1,9 +1,23 @@
 #pragma once
 
-const int launcherSize = 500;
+#include <string>
+#include <vector>
 
-const double centerDeadZone = 0.20;
-const double innerRegionSize = 0.40;
-const double itemDistance = 0.70;
+struct RadialProfile
+{
+    std::string name;
 
-const int optionCount = 8;
+    int optionCount;
+
+    int launcherSize;
+
+    double centerDeadZone;
+
+    double innerRegionSize;
+
+    double itemDistance;
+
+    std::vector<std::string> appPaths;
+};
+
+extern RadialProfile activeProfile;

@@ -8,6 +8,19 @@
 #include "AppLauncher.h"
 #include "RadialConfig.h"
 
+RadialProfile activeProfile =
+{
+    "Default",
+
+    8,      // optionCount
+    400,    // launcherSize
+    0.20,   // centerDeadZone
+    0.40,   // innerRegionSize
+    0.70,   // itemDistance
+
+    { "C:\\Users\\tanma\\Desktop\\Notepad.exe - Shortcut.lnk" }
+};
+
 bool trackingMouse = false;
 
 POINT clickPosition = {};
@@ -18,7 +31,8 @@ HWND mainWindow = nullptr;
 
 NOTIFYICONDATAA trayIcon = {};
 #define WM_TRAYICON (WM_APP + 10)
-#define ID_TRAY_EXIT 1001
+#define ID_TRAY_CUSTOMIZE 1001
+#define ID_TRAY_EXIT 1002
 
 int GetSelectedIndex(int dx, int dy)
 {
@@ -27,7 +41,7 @@ int GetSelectedIndex(int dx, int dy)
     );
 
     const double noSelectionRadius =
-        (launcherSize * centerDeadZone) / 2.0;
+        (activeProfile.launcherSize * activeProfile.centerDeadZone) / 2.0;
 
     if (distance < noSelectionRadius)
         return -1;
@@ -43,54 +57,100 @@ int GetSelectedIndex(int dx, int dy)
         angle += 2.0 * PI;
 
     const double angleStep =
-        (2.0 * PI) / optionCount;
+        (2.0 * PI) / activeProfile.optionCount;
 
     int index = static_cast<int>(
         (angle + angleStep / 2.0) / angleStep
         );
 
-    index %= optionCount;
+    index %= activeProfile.optionCount;
 
     return index;
 }
 
-void DrawCircle(
+void DrawSegment(
     HDC hdc,
     int centerX,
     int centerY,
-    int radius
+    double startAngle,
+    double endAngle,
+    double innerRadius,
+    double outerRadius,
+    bool filled
 )
 {
-    Ellipse(
-        hdc,
-        centerX - radius,
-        centerY - radius,
-        centerX + radius,
-        centerY + radius
-    );
-}
+    const int pointCount = 100;
+    std::vector<POINT> points;
 
-void DrawFilledCircle(
-    HDC hdc,
-    int centerX,
-    int centerY,
-    int radius
-)
-{
-    HBRUSH brush = CreateSolidBrush(RGB(50, 120, 255));
+    // Outer arc
+    for (int i = 0; i <= pointCount; i++)
+    {
+        double t =
+            startAngle +
+            (endAngle - startAngle) *
+            (static_cast<double>(i) / pointCount);
 
-    HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, brush);
+        POINT point;
+        point.x = centerX +
+            static_cast<LONG>(std::cos(t) * outerRadius);
 
-    Ellipse(
-        hdc,
-        centerX - radius,
-        centerY - radius,
-        centerX + radius,
-        centerY + radius
-    );
+        point.y = centerY +
+            static_cast<LONG>(std::sin(t) * outerRadius);
 
-    SelectObject(hdc, oldBrush);
-    DeleteObject(brush);
+        points.push_back(point);
+    }
+
+    // Inner arc, in reverse
+    for (int i = pointCount; i >= 0; i--)
+    {
+        double t =
+            startAngle +
+            (endAngle - startAngle) *
+            (static_cast<double>(i) / pointCount);
+
+        POINT point;
+        point.x = centerX +
+            static_cast<LONG>(std::cos(t) * innerRadius);
+
+        point.y = centerY +
+            static_cast<LONG>(std::sin(t) * innerRadius);
+
+        points.push_back(point);
+    }
+
+    if (filled)
+    {
+        HBRUSH brush =
+            CreateSolidBrush(RGB(50, 120, 255));
+
+        HBRUSH oldBrush =
+            (HBRUSH)SelectObject(hdc, brush);
+
+        Polygon(
+            hdc,
+            points.data(),
+            static_cast<int>(points.size())
+        );
+
+        SelectObject(hdc, oldBrush);
+        DeleteObject(brush);
+    }
+    else
+    {
+        HBRUSH oldBrush =
+            (HBRUSH)SelectObject(
+                hdc,
+                GetStockObject(NULL_BRUSH)
+            );
+
+        Polygon(
+            hdc,
+            points.data(),
+            static_cast<int>(points.size())
+        );
+
+        SelectObject(hdc, oldBrush);
+    }
 }
 
 void DrawTextCentered(
@@ -222,6 +282,20 @@ LRESULT CALLBACK WindowProc(
             AppendMenuA(
                 menu,
                 MF_STRING,
+                ID_TRAY_CUSTOMIZE,
+                "Customize"
+            );
+
+            AppendMenuA(
+                menu,
+                MF_SEPARATOR,
+                0,
+                nullptr
+            );
+
+            AppendMenuA(
+                menu,
+                MF_STRING,
                 ID_TRAY_EXIT,
                 "Exit"
             );
@@ -249,6 +323,18 @@ LRESULT CALLBACK WindowProc(
 
     case WM_COMMAND:
     {
+        if (LOWORD(wParam) == ID_TRAY_CUSTOMIZE)
+        {
+            MessageBoxA(
+                hwnd,
+                "Customization menu coming next.",
+                "Radial Launcher",
+                MB_OK
+            );
+
+            return 0;
+        }
+
         if (LOWORD(wParam) == ID_TRAY_EXIT)
         {
             Shell_NotifyIconA(
@@ -302,62 +388,75 @@ LRESULT CALLBACK WindowProc(
 
         const double PI = 3.14159265358979323846;
 
-        double distance = (launcherSize / 2.0) * itemDistance;
-        int radius = 30;
+        const int innerSize =
+            static_cast<int>(activeProfile.launcherSize * activeProfile.innerRegionSize);
+
+        const double outerRadius =
+            (activeProfile.launcherSize * 1.5) / 2.0;
+
+        const double innerRadius =
+            (innerSize * 0.5)/ 2.0;
+
+        const double angleStep =
+            (2.0 * PI) / activeProfile.optionCount;
 
         std::vector<std::string> labels;
 
-        for (int i = 0; i < optionCount; i++)
+        for (int i = 0; i < activeProfile.optionCount; i++)
         {
             labels.push_back(
                 std::to_string(i + 1)
             );
         }
 
-        // Draw radial menu
-        for (int i = 0; i < optionCount; i++)
+        for (int i = 0; i < activeProfile.optionCount; i++)
         {
-            double angle = (- PI / 2.0) + (i * (2.0 * PI / optionCount));
+            double centerAngle =
+                (-PI / 2.0) +
+                (i * angleStep);
 
-            int x = centerX + static_cast<int>(std::cos(angle) * distance);
-            int y = centerY + static_cast<int>(std::sin(angle) * distance);
+            double startAngle =
+                centerAngle - (angleStep / 2.0);
 
-            bool selected = (i == selectedIndex);
+            double endAngle =
+                centerAngle + (angleStep / 2.0);
 
-            if (selected)
-            {
-                DrawFilledCircle(
-                    memDC,
-                    x,
-                    y,
-                    radius + 5
-                );
-            }
-            else
-            {
-                DrawCircle(
-                    memDC,
-                    x,
-                    y,
-                    radius
-                );
-            }
+            bool selected =
+                (i == selectedIndex);
+
+            DrawSegment(
+                memDC,
+                centerX,
+                centerY,
+                startAngle,
+                endAngle,
+                innerRadius,
+                outerRadius,
+                selected
+            );
+
+            double labelRadius =
+                (activeProfile.launcherSize / 2.0) * activeProfile.itemDistance;
+
+            int labelX =
+                centerX +
+                static_cast<int>(
+                    std::cos(centerAngle) * labelRadius
+                    );
+
+            int labelY =
+                centerY +
+                static_cast<int>(
+                    std::sin(centerAngle) * labelRadius
+                    );
 
             DrawTextCentered(
                 memDC,
                 labels[i],
-                x,
-                y
+                labelX,
+                labelY
             );
         }
-
-        // Draw center circle of menu
-        DrawCircle(
-            memDC,
-            centerX,
-            centerY,
-            20
-        );
 
         // Copy finished image to actual window
         BitBlt(
@@ -424,8 +523,8 @@ int WINAPI WinMain(
         WS_POPUP,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
-        launcherSize,
-        launcherSize,
+        activeProfile.launcherSize,
+        activeProfile.launcherSize,
         nullptr,
         nullptr,
         hInstance,
@@ -437,15 +536,23 @@ int WINAPI WinMain(
         return 0;
     }
 
-    const int innerSize = static_cast<int>(launcherSize * innerRegionSize);
+    const int innerSize =
+        static_cast<int>(activeProfile.launcherSize * activeProfile.innerRegionSize);
 
-    const int innerOffset = (launcherSize - innerSize) / 2;
+    const int innerOffset =
+        (activeProfile.launcherSize - innerSize) / 2;
+
+    const double outerRadius =
+        activeProfile.launcherSize / 2.0;
+
+    const double innerRadius =
+        innerSize / 2.0;
 
     HRGN outerRegion = CreateEllipticRgn(
         0,
         0,
-        launcherSize,
-        launcherSize
+        activeProfile.launcherSize,
+        activeProfile.launcherSize
     );
 
     HRGN innerRegion = CreateEllipticRgn(
@@ -490,8 +597,8 @@ int WINAPI WinMain(
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-    int windowWidth = 500;
-    int windowHeight = 500;
+    int windowWidth = activeProfile.launcherSize;
+    int windowHeight = activeProfile.launcherSize;
 
     int x = (screenWidth - windowWidth) / 2;
     int y = (screenHeight - windowHeight) / 2;

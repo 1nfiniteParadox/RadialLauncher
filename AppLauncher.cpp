@@ -7,20 +7,25 @@
 
 void LaunchSelectedApp(int selectedIndex)
 {
-    std::vector<std::string> appPaths(optionCount, "");
-
-    appPaths[0] = "C:\\Users\\tanma\\Desktop\\Notepad.exe - Shortcut.lnk";
-
-    if (selectedIndex < 0 || selectedIndex >= optionCount)
+    if (selectedIndex < 0 || selectedIndex >= activeProfile.optionCount)
+    {
         return;
+    }
 
-    if (appPaths[selectedIndex].empty())
+    if (selectedIndex >= activeProfile.appPaths.size())
+    {
         return;
+    }
+
+    if (activeProfile.appPaths[selectedIndex].empty())
+    {
+        return;
+    }
 
     HINSTANCE result = ShellExecuteA(
         nullptr,
         "open",
-        appPaths[selectedIndex].c_str(),
+        activeProfile.appPaths[selectedIndex].c_str(),
         nullptr,
         nullptr,
         SW_SHOWNORMAL
